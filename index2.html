@@ -53,9 +53,10 @@ h2{  font-family:"Kanit", sans-serif;}
 <canvas id="riveCanvas"></canvas>
 
 
-<script src="https://unpkg.com/@rive-app/webgl2"></script>
+<script src="https://unpkg.com/@rive-app/canvas"></script>
 
-<script>
+<script >
+
 const riveCanvas = document.getElementById('riveCanvas');
 const claimBtn = document.getElementById("claimBtn"); // Query button after DOM is ready
 
@@ -75,8 +76,9 @@ function loadStateMachine(name) {
   if (riveInstance) riveInstance.cleanup();
 
   riveInstance = new rive.Rive({
-    src: "vybs.riv",
+    src: "vybs_new.riv",
     canvas: riveCanvas,
+      autoBind: false,
     artboard: currentArtboard,
     stateMachines: name,  // use 'name' passed from switchTo
     autoplay: true,
@@ -86,6 +88,19 @@ function loadStateMachine(name) {
 
     onLoad: () => {
       // Don't cleanup here!
+  const vm = riveInstance.viewModelByName("vybs");
+        const vmi = vm.instanceByName("Tokenized");
+
+        // Manually bind by applying the instance to the state machine and artboard
+        riveInstance.bindViewModelInstance(vmi);
+ // Strings
+        const stringProperty = vmi.string("virtual_curr_string");
+        const stringValue = stringProperty.value;
+        stringProperty.value = "+882,234";
+
+
+
+
       loader.style.display = "none";
       riveCanvas.style.display = "block";
 
@@ -99,6 +114,9 @@ function loadStateMachine(name) {
       } else {
         console.error("❌ is_claimed input not found!");
       }
+
+
+
 
       console.log(`Loaded ${name}, isClaimed input set.`);
     },
