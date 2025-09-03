@@ -67,7 +67,7 @@ riveCanvas.height = window.innerHeight * dpr;
 let riveInstance = null;
 let inputs = {};
 let isClaimed = null;
-let currentArtboard = "Token";
+let currentArtboard = "note2";
 
 function loadStateMachine(name) {
   console.log("Loading:", name);
@@ -76,7 +76,7 @@ function loadStateMachine(name) {
   if (riveInstance) riveInstance.cleanup();
 
   riveInstance = new rive.Rive({
-    src: "vybs_coins.riv",
+    src: "vybs_dollars.riv",
     canvas: riveCanvas,
       autoBind: false,
     artboard: currentArtboard,
