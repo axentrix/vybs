@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VYBS</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Advent+Pro:ital,wght@0,100..900;1,100..900&family=Kanit:wght@400;700&display=swap');
+
+html, body {
+  margin: 0; padding: 0; 
+}
+canvas, #riveCanvas {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block;
+
+}
+#riveCanvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  z-index: 1;
+ 
+}
+.holder{
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    font-family:"Kanit", sans-serif;
+    position:relative;
+    z-index:0;
+}
+h2{  font-family:"Kanit", sans-serif;}
+</style>
+</head>
+<body>
+  <!-- Loader -->
+<div id="loader" style="position: fixed; inset: 0; background: white; display: flex; align-items: center; justify-content: center; z-index: 9999;">
+  <h2>Loading...</h2>
+</div>
+<div class="holder"><img src="v3-scroll content up1.png"></div>
+<button id="claimBtn" style="
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 10000;
+  padding: 12px 24px;
+  font-size: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+">Claim</button>
+<canvas id="riveCanvas"></canvas>
+
+
+<script src="https://unpkg.com/@rive-app/canvas"></script>
+
+<script >
+
+const riveCanvas = document.getElementById('riveCanvas');
+const claimBtn = document.getElementById("claimBtn"); // Query button after DOM is ready
+
+const dpr = window.devicePixelRatio || 1;
+riveCanvas.width = window.innerWidth * dpr;
+riveCanvas.height = window.innerHeight * dpr;
+
+let riveInstance = null;
+let inputs = {};
+let isClaimed = null;
+let currentArtboard = "Token 2";
+
+function loadStateMachine(name) {
+  console.log("Loading:", name);
+
+  // Clean up old instance before creating new one (only here, NOT in onLoad)
+  if (riveInstance) riveInstance.cleanup();
+
+  riveInstance = new rive.Rive({
+    src: "vybs_dollars.riv",
+    canvas: riveCanvas,
+      autoBind: false,
+    artboard: currentArtboard,
+    stateMachines: name,  // use 'name' passed from switchTo
+    autoplay: true,
+    fit: rive.Fit.Contain,
+    alignment: rive.Alignment.Center,
+    devicePixelRatio: dpr,
+
+    onLoad: () => {
+      // Don't cleanup here!
+  const vm = riveInstance.viewModelByName("vybs");
+        const vmi = vm.instanceByName("Tokenized");
+
+        // Manually bind by applying the instance to the state machine and artboard
+        riveInstance.bindViewModelInstance(vmi);
+ // Strings
+        const stringProperty = vmi.string("virtual_curr_string");
+        const stringValue = stringProperty.value;
+        stringProperty.value = "+882,234";
+
+
+
+
+      loader.style.display = "none";
+      riveCanvas.style.display = "block";
+
+      inputs = Object.fromEntries(riveInstance.stateMachineInputs(name).map(i => [i.name, i]));
+      isClaimed = inputs.is_claimed;
+
+      if (isClaimed) {
+        claimBtn.disabled = false;
+        claimBtn.style.opacity = 1;
+        claimBtn.style.cursor = "pointer";
+      } else {
+        console.error("❌ is_claimed input not found!");
+      }
+
+
+
+
+      console.log(`Loaded ${name}, isClaimed input set.`);
+    },
+
+    onStateChange: (event) => {
+      // Use correct case for Exit state
+      const states = event.data;
+      const exited = (Array.isArray(states) && states.includes("exit")) || states === "exit";
+
+      if (exited) {
+        console.log("State machine reached Exit.");
+
+        if (isClaimed) {
+          isClaimed.value = false;
+          console.log("🔄 is_claimed reset to false");
+
+          riveInstance.reset();
+       
+        }
+
+        claimBtn.disabled = false;
+        claimBtn.style.opacity = 1;
+        claimBtn.style.cursor = "pointer";
+      }
+    },
+
+    onError: (err) => console.error("Rive Load Error:", err)
+  });
+}
+
+// Add event listener after button is guaranteed to exist
+claimBtn.addEventListener("click", () => {
+  if (isClaimed) {
+    isClaimed.value = true;
+    console.log("✅ is_claimed set to true");
+    claimBtn.disabled = true;
+    claimBtn.style.opacity = 0.5;
+    claimBtn.style.cursor = "default";
+  } else {
+    console.warn("⚠️ is_claimed input not found.");
+  }
+});
+
+switchTo("collect");
+
+function switchTo(machineName) {
+  loadStateMachine(machineName);
+}
+
+
+function resizeCanvas() {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  riveCanvas.width = width * dpr;
+  riveCanvas.height = height * dpr;
+  riveCanvas.style.width = width + "px";
+  riveCanvas.style.height = height + "px";
+}
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas(); // call on initial load
+
+
+
+</script>
+
+
+</body>
+</html>
