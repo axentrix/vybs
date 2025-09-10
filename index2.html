@@ -76,7 +76,7 @@ function loadStateMachine(name) {
   if (riveInstance) riveInstance.cleanup();
 
   riveInstance = new rive.Rive({
-    src: "vybs_dollars.riv",
+    src: "vybs_dollars2.riv",
     canvas: riveCanvas,
       autoBind: false,
     artboard: currentArtboard,
@@ -87,16 +87,8 @@ function loadStateMachine(name) {
     devicePixelRatio: dpr,
 
     onLoad: () => {
-      // Don't cleanup here!
-  const vm = riveInstance.viewModelByName("vybs");
-        const vmi = vm.instanceByName("Tokenized");
 
-        // Manually bind by applying the instance to the state machine and artboard
-        riveInstance.bindViewModelInstance(vmi);
- // Strings
-        const stringProperty = vmi.string("virtual_curr_string");
-        const stringValue = stringProperty.value;
-        stringProperty.value = "+882,234";
+
 
 
 
