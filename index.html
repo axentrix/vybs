@@ -9,27 +9,37 @@
 
 html, body {
   margin: 0; padding: 0; 
+  background:#5B69FF;
 }
-canvas, #riveCanvas {
-  position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block;
 
-}
 #riveCanvas {
   position: absolute;
-  top: 0; left: 0;
-  width: 100vw;
-  height: 100vh;
-  display: block;
+  top: 0; 
+  left: 0;
   z-index: 1;
- 
 }
 .holder{
     display:flex;
     justify-content:center;
-    align-items:flex-start;
+    align-items:center;
     font-family:"Kanit", sans-serif;
     position:relative;
     z-index:0;
+    width:360px;
+    margin:0 auto;
+}
+button{
+  border-radius: 8px;
+background: #D8524D !important;
+box-shadow: 0 -6px 0 0 #9F423E inset;
+border: none !important;
+outline:none !important;
+font-family:"Kanit", sans-serif;
+color:white;
+left:50%; transform:translateX(-50%);
+width:90px;
+top:90vh; 
+height:54px;
 }
 h2{  font-family:"Kanit", sans-serif;}
 </style>
@@ -39,8 +49,7 @@ h2{  font-family:"Kanit", sans-serif;}
 <div id="loader" style="position: fixed; inset: 0; background: white; display: flex; align-items: center; justify-content: center; z-index: 9999;">
   <h2>Loading...</h2>
 </div>
-<div class="holder"><img src="v3-scroll content up.png"></div>
-<button id="claimBtn" style="
+<div class="holder"><img src="v3-scroll content up.png"><canvas id="riveCanvas"></canvas><button id="claimBtn" style="
   position: fixed;
   bottom: 20px;
   right: 20px;
@@ -49,8 +58,11 @@ h2{  font-family:"Kanit", sans-serif;}
   font-size: 16px;
   border-radius: 8px;
   cursor: pointer;
-">Claim</button>
-<canvas id="riveCanvas"></canvas>
+  border: none;
+  background: white;
+">Claim</button></div>
+
+
 
 
 <script src="https://unpkg.com/@rive-app/webgl2"></script>
@@ -60,13 +72,20 @@ const riveCanvas = document.getElementById('riveCanvas');
 const claimBtn = document.getElementById("claimBtn"); // Query button after DOM is ready
 
 const dpr = window.devicePixelRatio || 1;
-riveCanvas.width = window.innerWidth * dpr;
-riveCanvas.height = window.innerHeight * dpr;
+
 
 let riveInstance = null;
 let inputs = {};
 let isClaimed = null;
-let currentArtboard = "Main";
+
+// Artboard configuration for toggling
+const artboards = [
+  { name: "dollar", stateMachine: "dollar" },
+  { name: "golden", stateMachine: "golden" },
+  { name: "blue", stateMachine: "blue" }
+];
+let currentArtboardIndex = 0;
+let currentArtboard = artboards[currentArtboardIndex].name;
 
 function loadStateMachine(name) {
   console.log("Loading:", name);
@@ -75,22 +94,45 @@ function loadStateMachine(name) {
   if (riveInstance) riveInstance.cleanup();
 
   riveInstance = new rive.Rive({
-    src: "vybs.riv",
+    src: "rive/vybs_flying_tokens3.riv",
     canvas: riveCanvas,
     artboard: currentArtboard,
     stateMachines: name,  // use 'name' passed from switchTo
     autoplay: true,
     fit: rive.Fit.Contain,
     alignment: rive.Alignment.Center,
-    devicePixelRatio: dpr,
+    devicePixelRatio: 1,
 
     onLoad: () => {
       // Don't cleanup here!
       loader.style.display = "none";
       riveCanvas.style.display = "block";
 
+      // Get artboard dimensions and scale up the animation
+      const artboard = riveInstance.artboard;
+      if (artboard) {
+        const originalWidth = artboard.bounds.maxX - artboard.bounds.minX;
+        const originalHeight = artboard.bounds.maxY - artboard.bounds.minY;
+        
+        // Scale factor - increase this to make animation larger
+        const scaleFactor = 0.8;
+        
+        const width = originalWidth * scaleFactor;
+        const height = originalHeight * scaleFactor;
+        
+        riveCanvas.width = width * dpr;
+        riveCanvas.height = height * dpr;
+        riveCanvas.style.width = width + "px";
+        riveCanvas.style.height = height + "px";
+        
+        // IMPORTANT: Tell Rive to re-render at the new canvas size
+        riveInstance.resizeDrawingSurfaceToCanvas();
+        
+        console.log(`Canvas set to ${scaleFactor}x size: ${width}x${height}px (original: ${originalWidth}x${originalHeight}px)`);
+      }
+
       inputs = Object.fromEntries(riveInstance.stateMachineInputs(name).map(i => [i.name, i]));
-      isClaimed = inputs.is_claimed;
+      isClaimed = inputs.is_Claimed;
 
       if (isClaimed) {
         claimBtn.disabled = false;
@@ -129,36 +171,28 @@ function loadStateMachine(name) {
   });
 }
 
-// Add event listener after button is guaranteed to exist
+// Add event listener to toggle between artboards
 claimBtn.addEventListener("click", () => {
-  if (isClaimed) {
-    isClaimed.value = true;
-    console.log("✅ is_claimed set to true");
-    claimBtn.disabled = true;
-    claimBtn.style.opacity = 0.5;
-    claimBtn.style.cursor = "default";
-  } else {
-    console.warn("⚠️ is_claimed input not found.");
-  }
+  // Move to next artboard
+  currentArtboardIndex = (currentArtboardIndex + 1) % artboards.length;
+  currentArtboard = artboards[currentArtboardIndex].name;
+  const stateMachine = artboards[currentArtboardIndex].stateMachine;
+  
+  console.log(`🔄 Switching to artboard: ${currentArtboard} with state machine: ${stateMachine}`);
+  
+  // Load the new artboard
+  switchTo(stateMachine);
 });
 
-switchTo("collect");
+// Initialize with first artboard
+switchTo(artboards[0].stateMachine);
 
 function switchTo(machineName) {
   loadStateMachine(machineName);
 }
 
 
-function resizeCanvas() {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  riveCanvas.width = width * dpr;
-  riveCanvas.height = height * dpr;
-  riveCanvas.style.width = width + "px";
-  riveCanvas.style.height = height + "px";
-}
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas(); // call on initial load
+// Canvas size is now controlled by Rive's original dimensions
 
 
 
